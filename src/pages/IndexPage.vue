@@ -177,8 +177,6 @@ const processFile = async () => {
 
         xmlString += `</TIANUMBER_REQ_RCV>`
 
-        xmlString += `</TIANUMBER_REQ_RCV>`
-
         zip.file(`${sapCode}.xml`, xmlString)
         count++
       }

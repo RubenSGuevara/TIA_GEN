@@ -17,6 +17,8 @@ export const FAMILY_PROPERTIES = {
   ]
 };
 
+
+
 export const PROPERTY_DESCRIPTIONS = {
   PCK_MV: 'Packing-mv',
   CRQ: 'Customer requirement',
@@ -30,6 +32,7 @@ export const PROPERTY_DESCRIPTIONS = {
   EPB: 'Protector for box end',
   EPP: 'Protector for pin end',
   FLY: 'Family',
+  ENP: 'End protector',
   DM_IN: 'Outside diameter in inches',
   LHF: 'Length from in mm',
   LHT: 'Length to in mm',
@@ -59,8 +62,25 @@ export const PROPERTY_DESCRIPTIONS = {
 };
 
 export const XML_HEADERS = {
+  REQUEST_NUMBER: '0000000000',
+  REQUEST_ITEM_NUMBER: '0',
   REF_DOC_NUMBER: '0000000000',
+  REF_DOC_ITEM: '0',
+  REF_DOC_TYPE: 'ZCRO',
   ACTION: 'CR',
   REQUEST_TYPE: 'S',
-  PLANT_ID: 'HI10'
+  PLANT_ID: 'HI10',
+  USER_NAME_ID: '000000',
+  USER_NAME_DESC: 'OD'
 };
+
+export const NUMERIC_PROPERTIES = [
+  'DM', 'WE', 'WT', 'DM_IN', 'LHF', 'LHT', 'WT_IN', 'LHF_FT', 'LHT_FT', 'SDL', 'SDL_IN', 'SDD', 'SDD_IN',
+  'ELP', 'ELP_FT', 'PPF', 'PPP', 'LHF_MILL', 'LHT_MILL',
+  'KPF', 'KPM', 'KPMWOC', 'KPP',
+  'IDTOLMAX', 'IDTOLMIN', 'IDTOLMAX2', 'IDTOLMIN2',
+  'LHTOLMAX', 'LHTOLMIN',
+  'ODTOLMAX', 'ODTOLMIN', 'ODTOLMAX2', 'ODTOLMIN2',
+  'WTTOLMAX', 'WTTOLMIN', 'WTTOLMAX2', 'WTTOLMIN2',
+  'RANGE_ID'
+];

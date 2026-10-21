@@ -36,12 +36,6 @@
               <li>Columnas obligatorias: <strong>SAP Product Code</strong>, <strong>Property</strong>, <strong>Value</strong> y <strong>Value Description</strong>.</li>
             </ul>
 
-            <p class="q-mb-xs"><strong>Operaciones Automáticas:</strong></p>
-            <ul class="q-mt-none q-mb-md">
-              <li>Agrupación por producto y limpieza de espacios nulos.</li>
-              <li>Filtrado inteligente de propiedades según la familia (FLY).</li>
-            </ul>
-
             <p class="q-mb-xs"><strong>Output:</strong></p>
             <ul class="q-mt-none q-mb-none">
               <li>Paquete <strong>.zip</strong> con telegramas XML individuales listos para ingesta.</li>
@@ -58,7 +52,7 @@
 import { ref } from 'vue';
 import * as XLSX from 'xlsx';
 import JSZip from 'jszip';
-import { FAMILY_PROPERTIES, XML_HEADERS } from '../utils/constans';
+import { FAMILY_PROPERTIES, XML_HEADERS, PROPERTY_DESCRIPTIONS } from '../utils/constans';
 
 const excelFile = ref(null);
 
@@ -116,13 +110,15 @@ const processFile = async () => {
       xmlString += `  <SAP_PRODUCT_CODE>${sapCode}</SAP_PRODUCT_CODE>\n`;
 
       filteredRows.forEach(row => {
-        // Manejo de posibles valores indefinidos
         const value = row['Value'] !== undefined ? row['Value'] : '';
         const valueDesc = row['Value Description'] !== undefined ? row['Value Description'] : '';
+        const propName = row['Property'];
+
+        const propertyDesc = PROPERTY_DESCRIPTIONS[propName] || 'DEFAULT';
 
         xmlString += `  <PRODUCT_ATTRIBUTES>\n`;
-        xmlString += `    <PROPERTY>${row['Property']}</PROPERTY>\n`;
-        xmlString += `    <PROPERTYDESCRIPTION>DEFAULT</PROPERTYDESCRIPTION>\n`;
+        xmlString += `    <PROPERTY>${propName}</PROPERTY>\n`;
+        xmlString += `    <PROPERTYDESCRIPTION>${propertyDesc}</PROPERTYDESCRIPTION>\n`;
         xmlString += `    <VALUE>${value}</VALUE>\n`;
         xmlString += `    <VALUEDESCRIPTION>${valueDesc}</VALUEDESCRIPTION>\n`;
         xmlString += `  </PRODUCT_ATTRIBUTES>\n`;

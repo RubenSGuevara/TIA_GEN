@@ -18,6 +18,36 @@
           :disable="!excelFile"
           @click="processFile"
         />
+
+        <q-card flat bordered class="q-mt-xl bg-white">
+          <q-card-section>
+            <div class="text-h6 text-grey-8 row items-center">
+              <q-icon name="info" size="sm" class="q-mr-sm text-primary" />
+              Guía de Procesamiento
+            </div>
+          </q-card-section>
+
+          <q-separator />
+
+          <q-card-section class="text-body2 text-grey-8">
+            <p class="q-mb-xs"><strong>Input:</strong></p>
+            <ul class="q-mt-none q-mb-md">
+              <li>Archivo Excel (.xlsx o .xls).</li>
+              <li>Columnas obligatorias: <strong>SAP Product Code</strong>, <strong>Property</strong>, <strong>Value</strong> y <strong>Value Description</strong>.</li>
+            </ul>
+
+            <p class="q-mb-xs"><strong>Operaciones Automáticas:</strong></p>
+            <ul class="q-mt-none q-mb-md">
+              <li>Agrupación por producto y limpieza de espacios nulos.</li>
+              <li>Filtrado inteligente de propiedades según la familia (FLY).</li>
+            </ul>
+
+            <p class="q-mb-xs"><strong>Output:</strong></p>
+            <ul class="q-mt-none q-mb-none">
+              <li>Paquete <strong>.zip</strong> con telegramas XML individuales listos para ingesta.</li>
+            </ul>
+          </q-card-section>
+        </q-card>
       </div>
     </div>
   </q-page>

@@ -141,6 +141,19 @@ const processFile = async () => {
         const filteredRows = rows.filter((r) => allowedProps.includes(r['Property']))
         const normalizedRows = normalizeNumbers(filteredRows)
 
+        const requiredDefaults = ['QCP_NUMBER', 'QCP_REVISION', 'TQ_ITEM', 'TQ_NUMBER', 'TQ_VERSION'];
+
+        requiredDefaults.forEach(prop => {
+          const exists = normalizedRows.some(row => row['Property'] === prop);
+          if (!exists) {
+            normalizedRows.push({
+              'Property': prop,
+              'Value': 'NOT APPLICABLE',
+              'Value Description': 'NOT APPLICABLE'
+            });
+          }
+        });
+
         let xmlString = `<?xml version="1.0" encoding="UTF-8"?>\n`
         xmlString += `<TIANUMBER_REQ_RCV xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="">\n`
         xmlString += `  <HEADER>\n`

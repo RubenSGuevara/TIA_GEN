@@ -231,7 +231,15 @@ const processExcelFile = (file) => {
         const workbook = XLSX.read(data, { type: 'array' })
         const firstSheetName = workbook.SheetNames[0]
         const worksheet = workbook.Sheets[firstSheetName]
-        const rawData = XLSX.utils.sheet_to_json(worksheet)
+        const sheetRows = XLSX.utils.sheet_to_json(worksheet, { raw: false, defval: '' })
+
+        const rawData = sheetRows.map((row) => {
+          const cleanRow = {}
+          Object.keys(row).forEach((key) => {
+            cleanRow[key.trim()] = row[key]
+          })
+          return cleanRow
+        })
 
         await buildZipFromRows(rawData)
         resolve()
@@ -260,28 +268,41 @@ const buildZipFromRows = async (rawData) => {
 
   const zip = new JSZip()
   let count = 0
+  const skippedProducts = []
 
   for (const [sapCode, rows] of Object.entries(groupedData)) {
     const flyRow = rows.find((r) => String(r['Property'] || '').trim() === 'FLY')
-    if (!flyRow) continue
+    if (!flyRow) {
+      skippedProducts.push(`${sapCode} (sin propiedad FLY)`)
+      continue
+    }
 
     const flyValue = String(flyRow['Value'] || '').trim()
     const allowedProps = FAMILY_PROPERTIES[flyValue]
-    if (!allowedProps) continue
+    if (!allowedProps) {
+      skippedProducts.push(`${sapCode} (familia "${flyValue}" no configurada)`)
+      continue
+    }
 
-    const filteredRows = rows
-      .map((r) => ({
-        ...r,
-        Property: String(r['Property'] || '').trim(),
-      }))
-      .filter((r) => allowedProps.includes(r['Property']))
+    const numberSystem = detectNumberSystem(rows)
 
-    const normalizedRows = normalizeRowsData(filteredRows)
+    const uniquePropsMap = new Map()
+    rows.forEach((r) => {
+      const prop = String(r['Property'] || '').trim()
+      if (!allowedProps.includes(prop)) return
+
+      const currentVal = String(r['Value'] ?? '').trim()
+      if (!uniquePropsMap.has(prop) || currentVal !== '') {
+        uniquePropsMap.set(prop, { ...r, Property: prop })
+      }
+    })
+    const filteredRows = Array.from(uniquePropsMap.values())
+
+    const normalizedRows = normalizeRowsData(filteredRows, numberSystem)
 
     const requiredDefaults = ['QCP_NUMBER', 'QCP_REVISION', 'TQ_ITEM', 'TQ_NUMBER', 'TQ_VERSION']
     requiredDefaults.forEach((prop) => {
-      const exists = normalizedRows.some((row) => row['Property'] === prop)
-      if (!exists) {
+      if (!normalizedRows.some((row) => row['Property'] === prop)) {
         normalizedRows.push({
           Property: prop,
           Value: 'NOT APPLICABLE',
@@ -307,13 +328,13 @@ const buildZipFromRows = async (rawData) => {
     xmlString += `  <PLANT_ID>${XML_HEADERS.PLANT_ID}</PLANT_ID>\n`
     xmlString += `  <USER_NAME_ID>${XML_HEADERS.USER_NAME_ID}</USER_NAME_ID>\n`
     xmlString += `  <USER_NAME_DESC>${XML_HEADERS.USER_NAME_DESC}</USER_NAME_DESC>\n`
-    xmlString += `  <SAP_PRODUCT_CODE>${sapCode}</SAP_PRODUCT_CODE>\n`
+    xmlString += `  <SAP_PRODUCT_CODE>${escapeXml(sapCode)}</SAP_PRODUCT_CODE>\n`
 
     normalizedRows.forEach((row) => {
-      const value = row['Value'] !== undefined ? row['Value'] : ''
-      const valueDesc = row['Value Description'] !== undefined ? row['Value Description'] : ''
-      const propName = row['Property']
-      const propertyDesc = PROPERTY_DESCRIPTIONS[propName] || 'DEFAULT'
+      const value = escapeXml(row['Value'])
+      const valueDesc = escapeXml(row['Value Description'])
+      const propName = escapeXml(row['Property'])
+      const propertyDesc = escapeXml(PROPERTY_DESCRIPTIONS[row['Property']] || 'DEFAULT')
 
       xmlString += `  <PRODUCT_ATTRIBUTES>\n`
       xmlString += `    <PROPERTY>${propName}</PROPERTY>\n`
@@ -325,8 +346,18 @@ const buildZipFromRows = async (rawData) => {
 
     xmlString += `</TIANUMBER_REQ_RCV>`
 
-    zip.file(`${sapCode}.xml`, xmlString)
+    const safeFileName = sapCode.replace(/[\\/:*?"<>|]/g, '_')
+    zip.file(`${safeFileName}.xml`, xmlString)
     count++
+  }
+
+  if (skippedProducts.length > 0) {
+    $q.notify({
+      type: 'warning',
+      message: `Se omitieron ${skippedProducts.length} producto(s): ${skippedProducts.join(', ')}`,
+      position: 'top-right',
+      timeout: 8000,
+    })
   }
 
   if (count === 0) {
@@ -358,33 +389,47 @@ const buildZipFromRows = async (rawData) => {
   })
 }
 
-const normalizeRowsData = (rows) => {
-  let system = 'UNKNOWN'
+const THREE_DEC_PROPERTIES = [
+  'DM_IN', 'WT_IN', 'SDD_IN', 'SDL_IN',
+  'IDTOLMAX', 'IDTOLMIN', 'IDTOLMAX2', 'IDTOLMIN2',
+  'LHTOLMAX', 'LHTOLMIN',
+  'ODTOLMAX', 'ODTOLMIN', 'ODTOLMAX2', 'ODTOLMIN2',
+  'WTTOLMAX', 'WTTOLMIN', 'WTTOLMAX2', 'WTTOLMIN2',
+]
 
-  for (const row of rows) {
-    if (NUMERIC_PROPERTIES.includes(row['Property'])) {
-      const val = String(row['Value'] || '')
-      if (val.includes('.') && val.includes(',')) {
-        system = val.lastIndexOf(',') > val.lastIndexOf('.') ? 'EU' : 'US'
-        break
-      }
+const detectNumberSystem = (rows) => {
+  const numVals = rows
+    .filter((r) => NUMERIC_PROPERTIES.includes(String(r['Property'] || '').trim()))
+    .map((r) => String(r['Value'] ?? '').trim())
+    .filter(Boolean)
+
+  // 1. Valores con punto y coma simultáneos (ej. 10.363,00 vs 10,363.00)
+  for (const val of numVals) {
+    if (val.includes('.') && val.includes(',')) {
+      return val.lastIndexOf(',') > val.lastIndexOf('.') ? 'EU' : 'US'
     }
   }
 
-  if (system === 'UNKNOWN') {
-    for (const row of rows) {
-      if (NUMERIC_PROPERTIES.includes(row['Property'])) {
-        const val = String(row['Value'] || '')
-        if (val.includes(',') && !val.includes('.') && val.match(/,\d{2,3}$/)) {
-          system = 'EU'
-          break
-        }
-      }
-    }
+  // 2. Terminaciones de 2 decimales o cero inicial (sin ambigüedad con miles)
+  for (const val of numVals) {
+    if (/,\d{2}$/.test(val) || /^0,\d+$/.test(val)) return 'EU'
+    if (/\.\d{2}$/.test(val) || /^0\.\d+$/.test(val)) return 'US'
   }
 
-  if (system === 'UNKNOWN') system = 'US'
+  // 3. Propiedades de 3 decimales (pulgadas y tolerancias)
+  for (const r of rows) {
+    const prop = String(r['Property'] || '').trim()
+    if (!THREE_DEC_PROPERTIES.includes(prop)) continue
 
+    const val = String(r['Value'] ?? '').trim()
+    if (/,\d{3}$/.test(val)) return 'EU'
+    if (/\.\d{3}$/.test(val)) return 'US'
+  }
+
+  return 'US'
+}
+
+const normalizeRowsData = (rows, system) => {
   const normalized = rows.map((row) => {
     const prop = row['Property']
     let val = String(row['Value'] ?? '').trim()
@@ -409,7 +454,7 @@ const normalizeRowsData = (rows) => {
     return { ...row, Value: val, 'Value Description': desc }
   })
 
-  // Validación física cruzada contra desfases x1000 generados por Excel
+  // Corrección de escala x1000 por conversión automática en archivos Excel
   const getNum = (prop) => {
     const found = normalized.find((r) => r['Property'] === prop)
     return found ? parseFloat(found['Value']) : NaN
@@ -435,9 +480,10 @@ const normalizeRowsData = (rows) => {
     const inchPair = inchPairs.find((p) => p.inProp === prop)
     if (inchPair) {
       const mmVal = getNum(inchPair.mmProp)
-      if (!isNaN(mmVal)) {
+      if (!isNaN(mmVal) && mmVal > 0) {
         const expectedIn = mmVal / 25.4
-        if (Math.abs(numVal / 1000 - expectedIn) < 0.25 && Math.abs(numVal - expectedIn) > 1) {
+        const relativeError = Math.abs(numVal / 1000 - expectedIn) / expectedIn
+        if (relativeError < 0.05 && Math.abs(numVal - expectedIn) > 1) {
           const fixed = (numVal / 1000).toFixed(3)
           return { ...row, Value: fixed, 'Value Description': fixed }
         }
@@ -458,6 +504,15 @@ const normalizeRowsData = (rows) => {
 
     return row
   })
+}
+
+const escapeXml = (unsafe) => {
+  return String(unsafe ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&apos;')
 }
 
 const downloadTemplate = () => {

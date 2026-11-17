@@ -8,12 +8,19 @@ export const FAMILY_PROPERTIES = {
   CN: [
     'PCK_MV', 'CRQ', 'FOR', 'PRO', 'DM', 'WE', 'WT', 'ISP', 'OSP', 'EPB', 'EPP', 'FLY', 'DM_IN', 'LHF',
     'LHT', 'WT_IN', 'EST', 'GRD', 'NOR', 'RLH', 'TTR', 'TYP', 'LHF_FT', 'LHT_FT', 'ETC', 'FTC', 'SDL',
-    'SDL_IN', 'SDD', 'SDD_IN', 'DYT', 'TQ_NUMBER', 'TQ_ITEM', 'TQ_VERSION', 'QCP_NUMBER', 'QCP_REVISION'
+    'SDL_IN', 'SDD', 'SDD_IN', 'DYT', 'TQ_NUMBER', 'TQ_ITEM',
+    'TQ_VERSION', 'QCP_NUMBER', 'QCP_REVISION'
   ],
   LP: [
     'PCK_MV', 'CRQ', 'FOR', 'PRO', 'ENP', 'DM', 'WE', 'WT', 'ISP', 'OSP', 'FLY', 'DM_IN', 'LHF', 'LHT',
     'WT_IN', 'EST', 'GRD', 'NOR', 'RLH', 'LHF_FT', 'LHT_FT', 'TQ_NUMBER', 'TQ_ITEM', 'TQ_VERSION',
     'QCP_NUMBER', 'QCP_REVISION'
+  ],
+  SM: [
+    'CSP', 'DM', 'DM_IN', 'ENP', 'EST', 'FLY', 'FOR', 'GRD', 'ISP', 'LHF',
+    'LHF_FT', 'LHT', 'LHT_FT', 'NOR', 'OSP', 'PCK_MV', 'PRO', 'QCP_NUMBER',
+    'QCP_REVISION', 'RLH', 'TQ_ITEM', 'TQ_NUMBER', 'TQ_VERSION', 'TTR', 'TYP',
+    'WT', 'WT_IN'
   ]
 };
 
@@ -58,7 +65,8 @@ export const PROPERTY_DESCRIPTIONS = {
   TQ_ITEM: 'TQ_ITEM',
   TQ_VERSION: 'TQ_VERSION',
   QCP_NUMBER: 'QCP_NUMBER',
-  QCP_REVISION: 'QCP_REVISION'
+  QCP_REVISION: 'QCP_REVISION',
+  CSP: 'Customer Spec.'
 };
 
 export const XML_HEADERS = {

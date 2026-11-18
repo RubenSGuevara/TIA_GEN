@@ -27,6 +27,7 @@ export const FAMILY_PROPERTIES = {
 
 
 export const PROPERTY_DESCRIPTIONS = {
+  PCK: 'Packing',
   PCK_MV: 'Packing-mv',
   CRQ: 'Customer requirement',
   FOR: 'Forming',

@@ -154,7 +154,7 @@ const excelFile = ref(null)
 const isProcessing = ref(false)
 const generatedCount = ref(null)
 
-const PAD_6_PROPS = ['CRQ', 'ENP', 'EPB', 'EPP', 'ETC', 'FTC', 'PCK_MV']
+const PAD_6_PROPS = ['CRQ', 'ENP', 'EPB', 'EPP', 'ETC', 'FTC', 'PCK', 'PCK_MV']
 const PAD_3_PROPS = ['CSP', 'DYT', 'EST', 'FOR', 'ISP', 'NOR', 'OSP', 'PRO', 'RLH', 'TTR', 'TYP']
 
 const parsePastedRows = (text) => {
@@ -296,6 +296,16 @@ const buildZipFromRows = async (rawData) => {
         uniquePropsMap.set(prop, { ...r, Property: prop })
       }
     })
+    if (allowedProps.includes('PCK_MV') && !uniquePropsMap.has('PCK_MV')) {
+      const pckRows = rows.filter((r) => String(r['Property'] || '').trim() === 'PCK')
+      const validPckRow =
+        pckRows.find((r) => String(r['Value'] ?? '').trim() !== '') || pckRows[0]
+
+      if (validPckRow) {
+        uniquePropsMap.set('PCK', { ...validPckRow, Property: 'PCK' })
+      }
+    }
+
     const filteredRows = Array.from(uniquePropsMap.values())
 
     const normalizedRows = normalizeRowsData(filteredRows, numberSystem)
